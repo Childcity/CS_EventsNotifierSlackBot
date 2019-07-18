@@ -25,7 +25,7 @@ namespace CS_EventsNotifierSlackBot {
 		public class HomeModule: NancyModule {
 
 			public HomeModule() {
-				Get("/", args => "<b>Hello World, it's Nancy on .NET Core</b>");
+				Get("/", args => "Hello World, it's Nancy on .NET Core");
 			}
 		}
 	}
