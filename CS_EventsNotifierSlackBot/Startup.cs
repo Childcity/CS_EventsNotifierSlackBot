@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using CS_EventsNotifierSlackBot.WebSockets;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Nancy.Owin;
+using System;
 
 namespace CS_EventsNotifierSlackBot {
 
@@ -17,7 +19,17 @@ namespace CS_EventsNotifierSlackBot {
 				app.UseDeveloperExceptionPage();
 			}
 
+			// enable static content
 			app.UseStaticFiles();
+
+			// setup WebSockets 
+			app.UseWebSockets(new WebSocketOptions() {
+				KeepAliveInterval = TimeSpan.FromSeconds(120),
+				ReceiveBufferSize = 4 * 1024
+			});
+			app.UseWebSocketConnection();
+
+			// use NancyFX by Owin
 			app.UseOwin(x => x.UseNancy());
 		}	
 	}

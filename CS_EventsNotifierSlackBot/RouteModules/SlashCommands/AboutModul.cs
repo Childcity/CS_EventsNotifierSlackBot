@@ -27,7 +27,7 @@ namespace CS_EventsNotifierSlackBot.RouteModules.SlashCommands {
 					}
 				};
 				return message;
-			});
+			}, ctx => ctx.Request.Body.Length > 0);
 		}
 	}
 }

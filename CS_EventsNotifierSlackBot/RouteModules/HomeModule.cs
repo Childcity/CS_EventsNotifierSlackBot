@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CS_EventsNotifierSlackBot.IntegrationApi {
+namespace CS_EventsNotifierSlackBot.RouteModules {
 	public class HomeModule: NancyModule {
 		public HomeModule(): base(""){
 			Get("/", args => {
