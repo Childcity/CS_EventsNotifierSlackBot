@@ -102,6 +102,9 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			string cardNamber = string.Empty;
 
 			if(GlobalScope.CachedImages.Count > 100) {
+				foreach(var item in GlobalScope.CachedImages) {
+					item.Value.Dispose();
+				}
 				GlobalScope.CachedImages.Clear();
 			}
 
@@ -122,7 +125,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			}
 
 			string imagePath = $"{wsContext.Request.Scheme}://{wsContext.Request.Host}/image/{cardNamber}";
-			imagePath = $"http://0cec647b.ngrok.io/image/{cardNamber}";
+			//imagePath = $"http://0cec647b.ngrok.io/image/{cardNamber}";
 
 			//Console.WriteLine("Cached image Length (bytes): " + GlobalScope.CachedImages[eventDTO.CardNumber.Value].Length);
 			//Console.WriteLine("GlobalScope.CachedImages.Count: " + GlobalScope.CachedImages.Count);
