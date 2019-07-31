@@ -75,7 +75,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 		private async Task processResult(string message) {
 			try {
-				Console.WriteLine(message);
+				//Console.WriteLine(message);
 
 				CommandBase command = JsonConvert.DeserializeObject<CommandBase>(message);
 
@@ -128,36 +128,36 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			//imagePath = $"http://0cec647b.ngrok.io/image/{cardNamber}";
 
 			//Console.WriteLine("Cached image Length (bytes): " + GlobalScope.CachedImages[eventDTO.CardNumber.Value].Length);
-			//Console.WriteLine("GlobalScope.CachedImages.Count: " + GlobalScope.CachedImages.Count);
+			Console.WriteLine("GlobalScope.CachedImages.Count: " + GlobalScope.CachedImages.Count);
 			//Console.WriteLine(imagePath);
 
 			var message = new Message() {
 				Text = $"{Emoji.InformationSource} *Совершен проход*",
 				Attachments = new List<Attachment> {
 						new Attachment {
-							Fallback = $"{Emoji.Runner} {eventDTO.HolderSurname} {eventDTO.HolderName} {eventDTO.HolderMiddlename}\n`Enable Attachment in settings for more info!`",
-							AuthorName = $"{Emoji.Runner} {eventDTO.HolderSurname} {eventDTO.HolderName} {eventDTO.HolderMiddlename}",
+							Fallback = $"{Emoji.Runner} {eventDTO.HolderSurname ?? ""} {eventDTO.HolderName ?? ""} {eventDTO.HolderMiddlename ?? ""}\n`Enable Attachment in settings for more info!`",
+							AuthorName = $"{Emoji.Runner} {eventDTO.HolderSurname ?? ""} {eventDTO.HolderName ?? ""} {eventDTO.HolderMiddlename ?? ""}",
 							ImageUrl = imagePath,
 							Color = "#4081F5",
 							Title = $"{Emoji.Pushpin} Информация {Emoji.Pushpin}",
 							Fields = new List<Field> {
 								new Field {
 									Title = $"Направление:",
-									Value = $"  • {eventDTO.StartAreaName} {(eventDTO?.Direction == 1 ? Emoji.ArrowRight : Emoji.ArrowLeft)} {eventDTO.TargetAreaName}"
+									Value = $"  • {eventDTO.StartAreaName ?? ""} {((eventDTO.Direction ?? 1) == 1 ? Emoji.ArrowRight : Emoji.ArrowLeft)} {eventDTO.TargetAreaName ?? ""}"
 								},
 								new Field {
 									Title = $"О Владельце:",
-									Value = $"  • {Emoji.DepartmentStore} Отделение         : {eventDTO.HolderDepartment}\n" +
-											$"  • {Emoji.EightSpokedAsterisk} Тип пропуска     : {eventDTO.HolderType}\n" +
-											$"  • {Emoji.Hash} Номер пропуска: {cardNamber}\n" +
-											$"  • {Emoji.Hash} Номер аккаунта: {eventDTO.AccountNumber}\n" +
-											$"  • {Emoji.Hash} Номер табеля    : {eventDTO.HolderTabNumber}\n"
+									Value = $"  • {Emoji.DepartmentStore} Отделение         : {eventDTO.HolderDepartment ?? ""}\n" +
+											$"  • {Emoji.EightSpokedAsterisk} Тип пропуска     : {eventDTO.HolderType ?? ""}\n" +
+											$"  • {Emoji.Hash} Номер пропуска: {cardNamber ?? ""}\n" +
+											$"  • {Emoji.Hash} Номер аккаунта: {eventDTO.AccountNumber ?? ""}\n" +
+											$"  • {Emoji.Hash} Номер табеля    : {eventDTO.HolderTabNumber ?? ""}\n"
 
 								}
 							},
-							Footer = $"Объект: {eventDTO?.ObjectName}\n" +
-									 $"Тип: {eventDTO?.ObjectType}\n" +
-									 $"{eventDTO?.EventTime.Value.ToString("f", CultureInfo.CreateSpecificCulture("ru-RU"))}"
+							Footer = $"Объект: {eventDTO.ObjectName ?? ""}\n" +
+									 $"Тип: {eventDTO.ObjectType ?? ""}\n" +
+									 $"{eventDTO.EventTime?.ToString("f", CultureInfo.CreateSpecificCulture("ru-RU"))}"
 						}
 					}
 			};
