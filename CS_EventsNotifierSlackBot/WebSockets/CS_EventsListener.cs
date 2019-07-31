@@ -21,11 +21,13 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 	public class CS_EventsListener {
 		private readonly SbmClient slackClient;
-		public HttpContext wsContext;
+		public readonly HttpContext wsContext;
 
 		public WebSocket WebSocket { get; set; }
 
-		public CS_EventsListener() {
+		public CS_EventsListener(HttpContext context, WebSocket webSocket) {
+			WebSocket = webSocket;
+			wsContext = context;
 
 			string slackWebHookUrl = Environment.GetEnvironmentVariable("SLACK_WEBHOOK_URL")
 				?? throw new ArgumentNullException("slackWebHookUrl", "EnvironmentVariable 'SLACK_WEBHOOK_URL' doesn't set!");
@@ -33,9 +35,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			slackClient = new SbmClient(slackWebHookUrl);
 		}
 
-		public async Task Listen(HttpContext context, WebSocket webSocket) {
-			WebSocket = webSocket;
-			wsContext = context;
+		public async Task Listen() {
 
 			byte[] buffer = new byte[1024];
 			WebSocketReceiveResult result = null;
@@ -54,18 +54,18 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 						if(result.MessageType == WebSocketMessageType.Text) {
 							using(var reader = new StreamReader(ms, Encoding.UTF8)) {
-								await processResult(await reader.ReadToEndAsync()); // start task without wait
+								processResult(await reader.ReadToEndAsync()); // start task without wait
 							}
 						}
 
 						ms.Dispose();
 						ms = new MemoryStream();
 					}
-				} while(!result.CloseStatus.HasValue);
+				} while(! result.CloseStatus.HasValue);
 
 				Console.WriteLine("Closing... ");
 
-				await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+				await WebSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
 			} catch(Exception e) {
 				Console.WriteLine("Exception: " + e.Message + "\n" + e.StackTrace);
 			} finally {
@@ -127,9 +127,9 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			string imagePath = $"{wsContext.Request.Scheme}://{wsContext.Request.Host}/image/{cardNamber}";
 			//imagePath = $"http://0cec647b.ngrok.io/image/{cardNamber}";
 
-			//Console.WriteLine("Cached image Length (bytes): " + GlobalScope.CachedImages[eventDTO.CardNumber.Value].Length);
+			Console.WriteLine("Cached image Length (bytes): " + GlobalScope.CachedImages[eventDTO.CardNumber.Value].Length);
 			Console.WriteLine("GlobalScope.CachedImages.Count: " + GlobalScope.CachedImages.Count);
-			//Console.WriteLine(imagePath);
+			Console.WriteLine(imagePath);
 
 			var message = new Message() {
 				Text = $"{Emoji.InformationSource} *Совершен проход*",

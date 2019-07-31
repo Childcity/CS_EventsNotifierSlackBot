@@ -47,8 +47,8 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
 
 
-			csEventsListener = new CS_EventsListener();
-			await csEventsListener.Listen(context, webSocket);
+			csEventsListener = new CS_EventsListener(context, webSocket);
+			await csEventsListener.Listen();
 		}
 	}
 }
