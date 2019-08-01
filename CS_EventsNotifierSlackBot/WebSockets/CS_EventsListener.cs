@@ -101,7 +101,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 		private async Task onPushEvent(EventDTO eventDTO) {
 			string cardNamber = string.Empty;
 
-			if(GlobalScope.CachedImages.Count > 100) {
+			if(GlobalScope.CachedImages.Count > 500) {
 				foreach(var item in GlobalScope.CachedImages) {
 					item.Value.Dispose();
 				}
@@ -113,6 +113,9 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 					using(var image = Image.Load<Rgb24>(eventDTO?.HolderPhoto)) {
 						if(image.Height > 250 && image.Width > 250) {
 							image.Mutate(im => im.Resize(250 * image.Width / image.Height, 250).Crop(image.Width - 30, image.Height - 30));
+						}else if(image.Height > 250) {
+							// if only image.Height > 250 -> Crop only image.Height
+							image.Mutate(im => im.Resize(250 * image.Width / image.Height, 250).Crop(image.Width, image.Height - 30));
 						}
 
 						GlobalScope.CachedImages[eventDTO.CardNumber.Value] = new MemoryStream();

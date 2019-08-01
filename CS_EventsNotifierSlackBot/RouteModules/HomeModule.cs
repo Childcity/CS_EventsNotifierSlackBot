@@ -9,7 +9,7 @@ using System.IO;
 namespace CS_EventsNotifierSlackBot.RouteModules {
 	public class HomeModule: NancyModule {
 		public HomeModule(): base(""){
-			Get("/", args => {
+			Get("/", params_ => {
 				return View["wwwroot/Home.html"];
 			});
 
