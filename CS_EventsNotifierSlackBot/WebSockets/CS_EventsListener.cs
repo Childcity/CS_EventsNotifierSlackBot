@@ -135,32 +135,16 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			Console.WriteLine(imagePath);
 
 			var message = new Message() {
-				Text = $"{Emoji.InformationSource} *Совершен проход*",
+				Text = $"*Сотрудник*\n{eventDTO.HolderSurname ?? ""} {eventDTO.HolderName ?? ""} {eventDTO.HolderMiddlename ?? ""}\n\n" +
+						$"*{eventDTO.ObjectName ?? "Контрольная точка не задана"}*\n" +
+						$"{eventDTO.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
+						$"{((eventDTO.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
+						$"Осуществление прохода по пропуску",
 				Attachments = new List<Attachment> {
 						new Attachment {
-							Fallback = $"{Emoji.Runner} {eventDTO.HolderSurname ?? ""} {eventDTO.HolderName ?? ""} {eventDTO.HolderMiddlename ?? ""}\n`Enable Attachment in settings for more info!`",
-							AuthorName = $"{Emoji.Runner} {eventDTO.HolderSurname ?? ""} {eventDTO.HolderName ?? ""} {eventDTO.HolderMiddlename ?? ""}",
+							Fallback = $"Enable Attachment in settings for more info!",
 							ImageUrl = imagePath,
-							Color = "#4081F5",
-							Title = $"{Emoji.Pushpin} Информация {Emoji.Pushpin}",
-							Fields = new List<Field> {
-								new Field {
-									Title = $"Направление:",
-									Value = $"  • {eventDTO.StartAreaName ?? ""} {((eventDTO.Direction ?? 1) == 1 ? Emoji.ArrowRight : Emoji.ArrowLeft)} {eventDTO.TargetAreaName ?? ""}"
-								},
-								new Field {
-									Title = $"О Владельце:",
-									Value = $"  • {Emoji.DepartmentStore} Отделение         : {eventDTO.HolderDepartment ?? ""}\n" +
-											$"  • {Emoji.EightSpokedAsterisk} Тип пропуска     : {eventDTO.HolderType ?? ""}\n" +
-											$"  • {Emoji.Hash} Номер пропуска: {cardNamber ?? ""}\n" +
-											$"  • {Emoji.Hash} Номер аккаунта: {eventDTO.AccountNumber ?? ""}\n" +
-											$"  • {Emoji.Hash} Номер табеля    : {eventDTO.HolderTabNumber ?? ""}\n"
-
-								}
-							},
-							Footer = $"Объект: {eventDTO.ObjectName ?? ""}\n" +
-									 $"Тип: {eventDTO.ObjectType ?? ""}\n" +
-									 $"{eventDTO.EventTime?.ToString("f", CultureInfo.CreateSpecificCulture("ru-RU"))}"
+							Color = "#4081F5"
 						}
 					}
 			};
