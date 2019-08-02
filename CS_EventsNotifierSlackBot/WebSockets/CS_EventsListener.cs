@@ -16,6 +16,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using CS_EventsNotifierSlackBot.Global;
 using System.Collections.Generic;
 using System.Globalization;
+using SixLabors.Primitives;
 
 namespace CS_EventsNotifierSlackBot.WebSockets {
 
@@ -111,13 +112,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			if(eventDTO.CardNumber.HasValue) {
 				if(! GlobalScope.CachedImages.ContainsKey(eventDTO.CardNumber.Value)) {
 					using(var image = Image.Load<Rgb24>(eventDTO?.HolderPhoto)) {
-						if(image.Height > 250 && image.Width > 250) {
-							image.Mutate(im => im.Resize(250 * image.Width / image.Height, 250).Crop(image.Width - 30, image.Height - 30));
-						}else if(image.Height > 250) {
-							// if only image.Height > 250 -> Crop only image.Height
-							image.Mutate(im => im.Resize(250 * image.Width / image.Height, 250).Crop(image.Width, image.Height - 30));
-						}
-
+						prepareImage(image);
 						GlobalScope.CachedImages[eventDTO.CardNumber.Value] = new MemoryStream();
 						image.SaveAsPng(GlobalScope.CachedImages[eventDTO.CardNumber.Value]);
 					}
@@ -150,6 +145,23 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			};
 
 			var resp = await slackClient.Send(message);
+		}
+
+		private static void prepareImage(Image<Rgb24> image) {
+			image.Mutate(im => im.EntropyCrop());
+			if(image.Height > 250) {
+				image.Mutate(im => im.Resize(250 * image.Width / image.Height, 250));
+
+				// if only image.Height > 250 -> Crop only image.Height
+				int xStartCropPoint = 0;
+				int newImageWidth = image.Width;
+				if(image.Width > 250) {
+					xStartCropPoint = 10;
+					newImageWidth = image.Width - 10 - 10;
+				}
+
+				image.Mutate(im => im.Crop(new Rectangle(xStartCropPoint, 0, newImageWidth, image.Height - 10)));
+			}
 		}
 	}
 }
