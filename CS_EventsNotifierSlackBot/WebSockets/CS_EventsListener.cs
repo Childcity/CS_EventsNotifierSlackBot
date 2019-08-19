@@ -111,10 +111,15 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 			if(eventDTO.CardNumber.HasValue) {
 				if(! GlobalScope.CachedImages.ContainsKey(eventDTO.CardNumber.Value)) {
-					using(var image = Image.Load<Rgb24>(eventDTO?.HolderPhoto)) {
-						prepareImage(image);
-						GlobalScope.CachedImages[eventDTO.CardNumber.Value] = new MemoryStream();
-						image.SaveAsPng(GlobalScope.CachedImages[eventDTO.CardNumber.Value]);
+					if(eventDTO.HolderPhoto != null) {
+						using(var image = Image.Load<Rgb24>(eventDTO.HolderPhoto)) {
+							prepareImage(image);
+							GlobalScope.CachedImages[eventDTO.CardNumber.Value] = new MemoryStream();
+							image.SaveAsPng(GlobalScope.CachedImages[eventDTO.CardNumber.Value]);
+
+							Console.WriteLine("Cached image Length (bytes): " + GlobalScope.CachedImages[eventDTO.CardNumber.Value].Length);
+							Console.WriteLine("GlobalScope.CachedImages.Count: " + GlobalScope.CachedImages.Count);
+						}
 					}
 				}
 
@@ -123,10 +128,8 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			}
 
 			string imagePath = $"{wsContext.Request.Scheme}://{wsContext.Request.Host}/image/{cardNamber}";
-			//imagePath = $"http://0cec647b.ngrok.io/image/{cardNamber}";
+			//imagePath = $"http://307137cf.ngrok.io/image/{cardNamber}";
 
-			Console.WriteLine("Cached image Length (bytes): " + GlobalScope.CachedImages[eventDTO.CardNumber.Value].Length);
-			Console.WriteLine("GlobalScope.CachedImages.Count: " + GlobalScope.CachedImages.Count);
 			Console.WriteLine(imagePath);
 
 			var message = new Message() {
@@ -148,19 +151,26 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 		}
 
 		private static void prepareImage(Image<Rgb24> image) {
+			int heightBeforeEntropyCrop = image.Height;
 			image.Mutate(im => im.EntropyCrop());
+			int heightAfterEntropyCrop = image.Height;
+
 			if(image.Height > 250) {
 				image.Mutate(im => im.Resize(250 * image.Width / image.Height, 250));
+
+				bool isHeightCroped = MathF.Abs(heightAfterEntropyCrop - heightBeforeEntropyCrop) > 5;
 
 				// if only image.Height > 250 -> Crop only image.Height
 				int xStartCropPoint = 0;
 				int newImageWidth = image.Width;
+				int newImageHeight = isHeightCroped ? image.Height - 10 : image.Height;
+
 				if(image.Width > 250) {
 					xStartCropPoint = 10;
 					newImageWidth = image.Width - 10 - 10;
 				}
 
-				image.Mutate(im => im.Crop(new Rectangle(xStartCropPoint, 0, newImageWidth, image.Height - 10)));
+				image.Mutate(im => im.Crop(new Rectangle(xStartCropPoint, 0, newImageWidth, newImageHeight)));
 			}
 		}
 	}
