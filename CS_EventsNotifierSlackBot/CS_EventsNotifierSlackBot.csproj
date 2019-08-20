@@ -27,8 +27,4 @@
     <PackageReference Include="SlackBotMessages" Version="2.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="RouteModules\Dialogflow\" />
-  </ItemGroup>
-
 </Project>
