@@ -1,8 +1,10 @@
-﻿using System;
+﻿using CS_EventsNotifierSlackBot.Global;
+using Newtonsoft.Json;
+using System;
 
 namespace CS_EventsNotifierSlackBot.WebSockets.DTO {
 
-	public class EventDTO {
+	public partial class EventDTO {
 
 		public int? EventCode { get; set; }
 
@@ -44,5 +46,17 @@ namespace CS_EventsNotifierSlackBot.WebSockets.DTO {
 
 		public byte[] HolderPhoto { get; set; }
 
+	}
+
+	public partial class EventDTO {
+
+		public static EventDTO FromObject(object obj) => FromJson(JsonConvert.SerializeObject(obj, JsonConverterSettings.Settings));
+
+		public static EventDTO FromJson(string json) => JsonConvert.DeserializeObject<EventDTO>(json, JsonConverterSettings.Settings);
+	}
+
+	public static class SerializeEventDTO {
+
+		public static string ToJson(this EventDTO self) => JsonConvert.SerializeObject(self, JsonConverterSettings.Settings);
 	}
 }

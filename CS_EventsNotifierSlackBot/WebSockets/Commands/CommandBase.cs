@@ -1,17 +1,21 @@
-﻿using Newtonsoft.Json;
+﻿using CS_EventsNotifierSlackBot.Global;
+using Newtonsoft.Json;
 using System;
 
 namespace CS_EventsNotifierSlackBot.WebSockets.Commands {
 
-	public class CommandBase {
+	public partial class CommandBase {
 
 		[JsonIgnore]
 		private readonly string name;
 		
 		public string Command { get; set; }
+
 		public Guid CommandId { get; set; }
+
 		public DateTime TimeStamp { get; set; }
 
+		// Field contain parameters from each command
 		public object Params { get; set; }
 
 		public CommandBase(string name) {
@@ -26,5 +30,15 @@ namespace CS_EventsNotifierSlackBot.WebSockets.Commands {
 		public override string ToString() {
 			return name;
 		}
+	}
+
+	public partial class CommandBase {
+		
+		public static CommandBase FromJson(string json) => JsonConvert.DeserializeObject<CommandBase>(json, JsonConverterSettings.Settings);
+	}
+
+	public static class SerializeCommandBase {
+
+		public static string ToJson(this CommandBase self) => JsonConvert.SerializeObject(self, JsonConverterSettings.Settings);
 	}
 }

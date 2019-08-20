@@ -55,7 +55,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 						if(result.MessageType == WebSocketMessageType.Text) {
 							using(var reader = new StreamReader(ms, Encoding.UTF8)) {
-								processResult(await reader.ReadToEndAsync()); // start task without wait
+								await processResult(await reader.ReadToEndAsync()); // start task without wait
 							}
 						}
 
@@ -78,13 +78,11 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			try {
 				//Console.WriteLine(message);
 
-				CommandBase command = JsonConvert.DeserializeObject<CommandBase>(message);
+				CommandBase command = CommandBase.FromJson(message);
 
 				switch(command.Command) {
 					case "RequestPushEvent": {
-							EventDTO eventDTO = JsonConvert.DeserializeObject<EventDTO>(
-								JsonConvert.SerializeObject(command.Params, Formatting.Indented));
-							await onPushEvent(eventDTO);
+							await onPushEvent(EventDTO.FromObject(command.Params));
 							break;
 						}
 						//default:
