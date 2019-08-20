@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using CS_EventsNotifierSlackBot.Global;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,6 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 	public class WebSocketConnectionMiddleware {
 		private readonly RequestDelegate next;
-		private CS_EventsListener csEventsListener;
 
 		public WebSocketConnectionMiddleware(RequestDelegate next) {
 			this.next = next;
@@ -37,18 +37,20 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			}
 
 			Console.WriteLine("/ws");
-
-			if(csEventsListener != null) {
-				csEventsListener.WebSocket.Abort();
-				csEventsListener = null;
-			}
-
-			Console.WriteLine("/ws connected");
 			WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+			Console.WriteLine("/ws connected");
 
 
-			csEventsListener = new CS_EventsListener(context, webSocket);
-			await csEventsListener.Listen();
+			CS_EventsListener csEventsListener = null;
+			try {
+				csEventsListener = new CS_EventsListener(context, webSocket);
+				GlobalScope.CSEventsListeners.Add(csEventsListener);
+				await csEventsListener.Listen();
+			} finally {
+				if(csEventsListener != null) {
+					GlobalScope.CSEventsListeners.Remove(csEventsListener);
+				}
+			}
 		}
 	}
 }

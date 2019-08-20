@@ -1,7 +1,6 @@
 ﻿using CS_EventsNotifierSlackBot.WebSockets.Commands;
 using CS_EventsNotifierSlackBot.WebSockets.DTO;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
 using SlackBotMessages;
 using SlackBotMessages.Models;
 using System;
@@ -22,12 +21,11 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 	public class CS_EventsListener {
 		private readonly SbmClient slackClient;
-		public readonly HttpContext wsContext;
+		private readonly HttpContext wsContext;
+		private readonly WebSocket webSocket;
 
-		public WebSocket WebSocket { get; set; }
-
-		public CS_EventsListener(HttpContext context, WebSocket webSocket) {
-			WebSocket = webSocket;
+		public CS_EventsListener(HttpContext context, WebSocket socket) {
+			webSocket = socket;
 			wsContext = context;
 
 			string slackWebHookUrl = Environment.GetEnvironmentVariable("SLACK_WEBHOOK_URL")
@@ -46,7 +44,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 				ms = new MemoryStream();
 
 				do {
-					result = await WebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+					result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 					await ms.WriteAsync(buffer, 0, result.Count, CancellationToken.None);
 
 					// if total message received -> process it
@@ -66,11 +64,12 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 				Console.WriteLine("Closing... ");
 
-				await WebSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+				await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
 			} catch(Exception e) {
 				Console.WriteLine("Exception: " + e.Message + "\n" + e.StackTrace);
 			} finally {
 				ms?.Dispose();
+				webSocket?.Abort();
 			}
 		}
 
