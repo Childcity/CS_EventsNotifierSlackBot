@@ -111,7 +111,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 				if(cmdType == RequestPushEvent.Name) {
 					await onPushEvent(EventDTO.FromObject(command.Params));
-				} else if (cmdType == ResponseWhereCoworker.Name) {
+				} else if (cmdType == ResponseHolderLocation.Name) {
 					await onResponseWhereCoworker(HolderLocationDTO.FromObject(command.Params));
 				}
 			} catch(Exception e) {
@@ -120,7 +120,13 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 		}
 
 		private async Task onResponseWhereCoworker(HolderLocationDTO holderLocation) {
+			var message = new Message() {
+				Text = $"*Сотрудник*\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n\n" +
+					   $"{buildEventsInfo(holderLocation.EventsInfo)}"
+						
+			};
 
+			var resp = await slackClient.Send(message);
 		}
 
 		private async Task onPushEvent(EventDTO eventDTO) {
@@ -172,6 +178,20 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			};
 
 			var resp = await slackClient.Send(message);
+		}
+
+		private static string buildEventsInfo(List<EventInfoDTO> events) {
+			string info = string.Empty;
+
+			int eventNumber = 1;
+			foreach(var eventDTO in events) {
+				info += $"*{eventNumber++}. {eventDTO.ObjectName ?? "Контрольная точка не задана"}*\n" +
+						$"{eventDTO.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
+						$"{((eventDTO.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
+						$"Осуществление прохода по пропуску\n";
+			}
+
+			return info;
 		}
 
 		private static void prepareImage(Image<Rgb24> image) {

@@ -71,7 +71,7 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 			Console.WriteLine(whereHolderRequest.ToJson(true));
 
 			foreach(var eventsListener in GlobalScope.CSEventsListeners) {
-				eventsListener.PostCommand(new RequestWhereCoworker(whereHolderRequest));
+				eventsListener.PostCommand(new RequestHolderLocation(whereHolderRequest));
 			}
 
 			// send response to Dialogflow (Dialogflow automatically resend it to Slack, Telegram, Skype, etc.)
