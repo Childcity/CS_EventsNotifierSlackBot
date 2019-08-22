@@ -31,6 +31,10 @@ namespace CS_EventsNotifierSlackBot {
 
 			// use NancyFX by Owin
 			app.UseOwin(x => x.UseNancy());
-		}	
+		}
+
+		private void OnShutdown() {
+			//TODO: implement proper cancelation
+		}
 	}
 }

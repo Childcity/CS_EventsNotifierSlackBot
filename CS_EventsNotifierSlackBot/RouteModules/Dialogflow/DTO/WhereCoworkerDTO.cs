@@ -9,23 +9,35 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow.DTO {
 		[JsonProperty("target-name", NullValueHandling = NullValueHandling.Ignore)]
 		public string TargetName { get; set; }
 
-		[JsonProperty("target-lastname", NullValueHandling = NullValueHandling.Ignore)]
-		public string TargetLastname { get; set; }
-
-		[JsonProperty("date", NullValueHandling = NullValueHandling.Ignore)]
-		public DateTimeOffset? Date { get; set; }
-
-		[JsonProperty("time-period", NullValueHandling = NullValueHandling.Ignore)]
-		public TimePeriodDTO TimePeriod { get; set; }
-
 		[JsonProperty("target-middlename", NullValueHandling = NullValueHandling.Ignore)]
 		public string TargetMiddlename { get; set; }
 
-		[JsonProperty("time", NullValueHandling = NullValueHandling.Ignore)]
-		public string Time { get; set; }
+		[JsonProperty("target-lastname", NullValueHandling = NullValueHandling.Ignore)]
+		public string TargetLastname { get; set; }
 
-		[JsonProperty("date-time", NullValueHandling = NullValueHandling.Ignore)]
-		public string DateTime { get; set; }
+		[JsonProperty("date", NullValueHandling = NullValueHandling.Ignore, DefaultValueHandling = DefaultValueHandling.Ignore)]
+		public DateTimeOffset? Date { get; set; }
+
+		[JsonProperty("time", NullValueHandling = NullValueHandling.Ignore, DefaultValueHandling = DefaultValueHandling.Ignore)]
+		public DateTimeOffset? Time { get; set; }
+
+		[JsonProperty("date_time", NullValueHandling = NullValueHandling.Ignore)]
+		public DateTimeWraper DateTimeObject { get; set; }
+
+		[JsonProperty("time-period", NullValueHandling = NullValueHandling.Ignore, DefaultValueHandling = DefaultValueHandling.Ignore)]
+		public TimePeriodDTO TimePeriod { get; set; }
+	}
+
+	public partial class DateTimeWraper {
+
+		public DateTimeWraper() { }
+
+		public DateTimeWraper(DateTimeOffset dateTime) {
+			DateTime = dateTime;
+		}
+
+		[JsonProperty("date_time", NullValueHandling = NullValueHandling.Ignore, DefaultValueHandling = DefaultValueHandling.Ignore)]
+		public DateTimeOffset? DateTime { get; set; }
 	}
 
 	public partial class WhereCoworkerDTO {
@@ -37,6 +49,6 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow.DTO {
 
 	public static class SerializeWhereCoworkerDTO {
 
-		public static string ToJson(this WhereCoworkerDTO self) => JsonConvert.SerializeObject(self, JsonConverterSettings.Settings);
+		public static string ToJson(this WhereCoworkerDTO self, bool indented = false) => JsonConvert.SerializeObject(self, indented ? Formatting.Indented : Formatting.None, JsonConverterSettings.Settings);
 	}
 }

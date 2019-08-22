@@ -13,7 +13,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets.Commands {
 
 		public Guid CommandId { get; set; }
 
-		public DateTime TimeStamp { get; set; }
+		public DateTimeOffset TimeStamp { get; set; }
 
 		// Field contain parameters from each command
 		public object Params { get; set; }
@@ -22,7 +22,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets.Commands {
 			this.name = name;
 			Command = GetType().Name;
 			CommandId = Guid.NewGuid();
-			TimeStamp = DateTime.Now;
+			TimeStamp = DateTimeOffset.Now;
 		}
 
 		public CommandBase() : this(typeof(CommandBase).Name) { }

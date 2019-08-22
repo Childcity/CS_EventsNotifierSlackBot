@@ -6,24 +6,6 @@ using System.Collections.Generic;
 
 namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow.Commands {
 
-	public static class IntentType {
-		public static readonly string WhereCoworker = "abeee50f-81ed-44d5-9461-4ebd500a9e29";
-
-		public enum Type {
-			Undefined,
-			WhereCoworker
-		}
-
-		public static Type GetType(string intentName) {
-			if(intentName != null) {
-				if(intentName.Contains(WhereCoworker))
-					return Type.WhereCoworker;
-			}
-
-			return Type.Undefined;
-		}
-	}
-
 	public partial class RequestWebHookIntent {
 
 		[JsonProperty("responseId", NullValueHandling = NullValueHandling.Ignore)]
@@ -153,8 +135,8 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow.Commands {
 		[JsonProperty("time.original", NullValueHandling = NullValueHandling.Ignore)]
 		public string TimeOriginal { get; set; }
 
-		[JsonProperty("date-time", NullValueHandling = NullValueHandling.Ignore)]
-		public string DateTime { get; set; }
+		[JsonProperty("date_time", NullValueHandling = NullValueHandling.Ignore)]
+		public DateTimeWraper DateTimeObject { get; set; }
 
 		[JsonProperty("date-time.original", NullValueHandling = NullValueHandling.Ignore)]
 		public string DateTimeOriginal { get; set; }
@@ -165,7 +147,7 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow.Commands {
 		public static RequestWebHookIntent FromJson(string json) => JsonConvert.DeserializeObject<RequestWebHookIntent>(json, JsonConverterSettings.Settings);
 	}
 
-	public static class RequestWebHookIntentSerialize {
+	public static class SerializeRequestWebHookIntent {
 
 		public static string ToJson(this RequestWebHookIntent self) => JsonConvert.SerializeObject(self, JsonConverterSettings.Settings);
 	}

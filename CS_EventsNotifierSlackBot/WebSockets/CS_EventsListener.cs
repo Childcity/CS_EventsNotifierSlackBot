@@ -1,28 +1,31 @@
-﻿using CS_EventsNotifierSlackBot.WebSockets.Commands;
+﻿using CS_EventsNotifierSlackBot.Global;
+using CS_EventsNotifierSlackBot.WebSockets.Commands;
 using CS_EventsNotifierSlackBot.WebSockets.DTO;
 using Microsoft.AspNetCore.Http;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.Primitives;
 using SlackBotMessages;
 using SlackBotMessages.Models;
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.PixelFormats;
-using CS_EventsNotifierSlackBot.Global;
-using System.Collections.Generic;
-using System.Globalization;
-using SixLabors.Primitives;
 
 namespace CS_EventsNotifierSlackBot.WebSockets {
 
 	public class CS_EventsListener {
-		private readonly SbmClient slackClient;
 		private readonly HttpContext wsContext;
 		private readonly WebSocket webSocket;
+		private readonly SbmClient slackClient;
+		private readonly CancellationTokenSource tokenSource;
+		private BlockingCollection<CommandBase> messageQueue;
 
 		public CS_EventsListener(HttpContext context, WebSocket socket) {
 			webSocket = socket;
@@ -32,23 +35,30 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 				?? throw new ArgumentNullException("slackWebHookUrl", "EnvironmentVariable 'SLACK_WEBHOOK_URL' doesn't set!");
 
 			slackClient = new SbmClient(slackWebHookUrl);
+			messageQueue = new BlockingCollection<CommandBase>();
+			tokenSource = new CancellationTokenSource();
+		}
+
+		public void PostCommand(CommandBase command) {
+			messageQueue.Add(command, tokenSource.Token);
 		}
 
 		public async Task Listen() {
-
 			byte[] buffer = new byte[1024];
 			WebSocketReceiveResult result = null;
-
 			MemoryStream ms = null;
+
+			Task commandSenderTask = Task.Run(async () => await commandSender(tokenSource.Token));
+			
 			try {
 				ms = new MemoryStream();
 
 				do {
-					result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-					await ms.WriteAsync(buffer, 0, result.Count, CancellationToken.None);
+					result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), tokenSource.Token);
+					await ms.WriteAsync(buffer, 0, result.Count, tokenSource.Token);
 
 					// if total message received -> process it
-					if(result.EndOfMessage && (! result.CloseStatus.HasValue)) {
+					if(result.EndOfMessage && (!result.CloseStatus.HasValue)) {
 						ms.Seek(0, SeekOrigin.Begin);
 
 						if(result.MessageType == WebSocketMessageType.Text) {
@@ -64,12 +74,30 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 				Console.WriteLine("Closing... ");
 
-				await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+				await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, tokenSource.Token);
+
+				// will cancel commandSenderTask
+				tokenSource.Cancel();
+
+				await commandSenderTask;
 			} catch(Exception e) {
 				Console.WriteLine("Exception: " + e.Message + "\n" + e.StackTrace);
 			} finally {
 				ms?.Dispose();
+				messageQueue?.Dispose();
 				webSocket?.Abort();
+				tokenSource?.Dispose();
+			}
+		}
+
+		private async Task commandSender(CancellationToken cancellationToken) {
+			foreach(CommandBase item in messageQueue.GetConsumingEnumerable(cancellationToken)) {
+				if(cancellationToken.IsCancellationRequested) {
+					return;
+				}
+				
+				byte[] buffer = Encoding.UTF8.GetBytes(item.ToJson());
+				await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, cancellationToken);
 			}
 		}
 
@@ -79,21 +107,20 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 				CommandBase command = CommandBase.FromJson(message);
 
-				switch(command.Command) {
-					case "RequestPushEvent": {
-							await onPushEvent(EventDTO.FromObject(command.Params));
-							break;
-						}
-						//default:
-						//	{
-						//      Encoding.UTF8.GetBytes("{Command: \"" + { command.Command}+"\"}").CopyTo(buffer, 0);
-						//		await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
-						//		break;
-						//	}
+				string cmdType = command.Command;
+
+				if(cmdType == RequestPushEvent.Name) {
+					await onPushEvent(EventDTO.FromObject(command.Params));
+				} else if (cmdType == ResponseWhereCoworker.Name) {
+					await onResponseWhereCoworker(HolderLocationDTO.FromObject(command.Params));
 				}
 			} catch(Exception e) {
 				Console.WriteLine(e.ToString());
 			}
+		}
+
+		private async Task onResponseWhereCoworker(HolderLocationDTO holderLocation) {
+
 		}
 
 		private async Task onPushEvent(EventDTO eventDTO) {
@@ -107,7 +134,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			}
 
 			if(eventDTO.CardNumber.HasValue) {
-				if(! GlobalScope.CachedImages.ContainsKey(eventDTO.CardNumber.Value)) {
+				if(!GlobalScope.CachedImages.ContainsKey(eventDTO.CardNumber.Value)) {
 					if(eventDTO.HolderPhoto != null) {
 						using(var image = Image.Load<Rgb24>(eventDTO.HolderPhoto)) {
 							prepareImage(image);
