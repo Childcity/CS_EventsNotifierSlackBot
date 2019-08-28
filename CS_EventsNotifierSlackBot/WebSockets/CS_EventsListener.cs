@@ -11,8 +11,10 @@ using SlackBotMessages.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -49,7 +51,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			MemoryStream ms = null;
 
 			Task commandSenderTask = Task.Run(async () => await commandSender(tokenSource.Token));
-			
+
 			try {
 				ms = new MemoryStream();
 
@@ -58,11 +60,11 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 					await ms.WriteAsync(buffer, 0, result.Count, tokenSource.Token);
 
 					// if total message received -> process it
-					if(result.EndOfMessage && (!result.CloseStatus.HasValue)) {
+					if (result.EndOfMessage && (!result.CloseStatus.HasValue)) {
 						ms.Seek(0, SeekOrigin.Begin);
 
-						if(result.MessageType == WebSocketMessageType.Text) {
-							using(var reader = new StreamReader(ms, Encoding.UTF8)) {
+						if (result.MessageType == WebSocketMessageType.Text) {
+							using (var reader = new StreamReader(ms, Encoding.UTF8)) {
 								await processResult(await reader.ReadToEndAsync()); // start task without wait
 							}
 						}
@@ -70,7 +72,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 						ms.Dispose();
 						ms = new MemoryStream();
 					}
-				} while(! result.CloseStatus.HasValue);
+				} while (!result.CloseStatus.HasValue);
 
 				Console.WriteLine("Closing... ");
 
@@ -80,7 +82,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 				tokenSource.Cancel();
 
 				await commandSenderTask;
-			} catch(Exception e) {
+			} catch (Exception e) {
 				Console.WriteLine("Exception: " + e.Message + "\n" + e.StackTrace);
 			} finally {
 				ms?.Dispose();
@@ -91,11 +93,11 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 		}
 
 		private async Task commandSender(CancellationToken cancellationToken) {
-			foreach(CommandBase item in messageQueue.GetConsumingEnumerable(cancellationToken)) {
-				if(cancellationToken.IsCancellationRequested) {
+			foreach (CommandBase item in messageQueue.GetConsumingEnumerable(cancellationToken)) {
+				if (cancellationToken.IsCancellationRequested) {
 					return;
 				}
-				
+
 				byte[] buffer = Encoding.UTF8.GetBytes(item.ToJson());
 				await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, cancellationToken);
 			}
@@ -109,40 +111,131 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 				string cmdType = command.Command;
 
-				if(cmdType == RequestPushEvent.Name) {
+				if (cmdType == RequestPushEvent.Name) {
 					await onPushEvent(EventDTO.FromObject(command.Params));
 				} else if (cmdType == ResponseHolderLocation.Name) {
 					await onResponseWhereCoworker(HolderLocationDTO.FromObject(command.Params));
 				}
-			} catch(Exception e) {
+			} catch (Exception e) {
 				Console.WriteLine(e.ToString());
 			}
 		}
 
 		private async Task onResponseWhereCoworker(HolderLocationDTO holderLocation) {
-			var message = new Message() {
-				Text = $"*Сотрудник*\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n\n" +
-					   $"{buildEventsInfo(holderLocation.EventsInfo)}"
-						
-			};
+			Message message = new Message();
 
-			var resp = await slackClient.Send(message);
+			Console.WriteLine(holderLocation.ToJson(true));
+
+			if (holderLocation.HolderInfo.HolderName == null) {
+				message.Text = $"Не нашел событий с указанным сотрудником. Возможно его небыло {holderLocation.TimePeriod.StartTime?.Date.ToString("dd MMMM yyyy", CultureInfo.CreateSpecificCulture("ru-RU"))}";
+			} else {
+				var queryType = holderLocation.QueryType;
+				if (queryType == QueryType.Type.Where) {
+					message.Text = $"*Сотрудник*\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n\n" +
+							   $"{buildEventsInfo(holderLocation.EventsInfo)}";
+				} else { // юзер хочет узнать пришел/ушел сотрудник
+					Debug.Assert(holderLocation.IsHolderIn.HasValue); // should be always true here!
+
+					bool isHolderIn = holderLocation.IsHolderIn.Value;
+					
+					// найдем событие входа/выхода на/из територию
+					var foundedEvent = findInOrOutEvent(holderLocation.EventsInfo, isHolderIn);
+
+					if (isHolderIn) { // пришел?
+						if (queryType == QueryType.Type.Empty) { // юзер хочет ответ (Да, пришел)/(Нет, не пришел)
+							if (foundedEvent.found) {
+								message.Text = $"Да, сотрудник\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
+										   $"*пришёл*\n" +
+										   //$"*{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}*\n" +
+										   $"в {foundedEvent.eventInfo.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
+										   //$"{((foundedEvent.eventInfo.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
+										   $"Осуществление прохода по пропуску | " +
+											$"{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}\n";
+							} else {
+								message.Text = $"Нет, сотрудника \n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
+											$"*не было*";
+							}
+						} else { // юзер хочет узнать (Во сколько)/(когда) сотрудник пришел
+							if (foundedEvent.found) {
+								message.Text = $"*Сотрудник*\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
+											$"*пришёл*\n" +
+											//$"*{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}*\n" +
+											$"в {foundedEvent.eventInfo.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
+											//$"{((foundedEvent.eventInfo.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
+											$"Осуществление прохода по пропуску | " +
+											$"{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}\n";
+							} else {
+								message.Text = $"Сотрудника \n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
+											$"*не было*";
+							}
+						}
+					} else { // ушел?
+						if (queryType == QueryType.Type.Empty) {
+							if (foundedEvent.found) {
+								message.Text = $"Да, сотрудник\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
+										   $"*ушёл*\n" +
+										   //$"*{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}*\n" +
+										   $"в {foundedEvent.eventInfo.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
+										   //$"{((foundedEvent.eventInfo.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
+										   $"Осуществление прохода по пропуску | " +
+											$"{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}\n";
+							} else {
+								message.Text = $"Не нашел события *выхода* из територии";
+
+								try {
+									var lastEvent = holderLocation.EventsInfo.First(evInf => evInf.EventCode == 105);
+									message.Text += $"\nПоследнее событие прохода:\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
+										   $"*{lastEvent.ObjectName ?? "Контрольная точка не задана"}*\n" +
+										   $"{lastEvent.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
+										   $"{((lastEvent.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
+										   $"Осуществление прохода по пропуску\n";
+								} catch (Exception) { }
+							}
+						} else { // юзер хочет узнать Во сколько/когда сотрудник ушёл
+							if (foundedEvent.found) {
+								message.Text = $"*Сотрудник*\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
+											$"*ушёл*\n" +
+											//$"*{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}*\n" +
+											$"в {foundedEvent.eventInfo.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
+											//$"{((foundedEvent.eventInfo.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
+											$"Осуществление прохода по пропуску | " +
+											$"{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}\n";
+							} else {
+								message.Text = $"Не нашел события *выхода* из територии";
+
+								try {
+									var lastEvent = holderLocation.EventsInfo.First(evInf => evInf.EventCode == 105);
+									message.Text += $"\nПоследнее событие прохода:\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
+										   $"*{lastEvent.ObjectName ?? "Контрольная точка не задана"}*\n" +
+										   $"{lastEvent.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
+										   $"{((lastEvent.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
+										   $"Осуществление прохода по пропуску\n";
+								} catch (Exception) { }
+							}
+						}
+					}
+				}
+			}
+
+			Console.WriteLine(message.Text);
+
+			await slackClient.Send(message);
 		}
 
 		private async Task onPushEvent(EventDTO eventDTO) {
 			string cardNamber = string.Empty;
 
-			if(GlobalScope.CachedImages.Count > 500) {
-				foreach(var item in GlobalScope.CachedImages) {
+			if (GlobalScope.CachedImages.Count > 500) {
+				foreach (var item in GlobalScope.CachedImages) {
 					item.Value.Dispose();
 				}
 				GlobalScope.CachedImages.Clear();
 			}
 
-			if(eventDTO.CardNumber.HasValue) {
-				if(!GlobalScope.CachedImages.ContainsKey(eventDTO.CardNumber.Value)) {
-					if(eventDTO.HolderPhoto != null) {
-						using(var image = Image.Load<Rgb24>(eventDTO.HolderPhoto)) {
+			if (eventDTO.CardNumber.HasValue) {
+				if (!GlobalScope.CachedImages.ContainsKey(eventDTO.CardNumber.Value)) {
+					if (eventDTO.HolderPhoto != null) {
+						using (var image = Image.Load<Rgb24>(eventDTO.HolderPhoto)) {
 							prepareImage(image);
 							GlobalScope.CachedImages[eventDTO.CardNumber.Value] = new MemoryStream();
 							image.SaveAsPng(GlobalScope.CachedImages[eventDTO.CardNumber.Value]);
@@ -177,14 +270,30 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 					}
 			};
 
-			var resp = await slackClient.Send(message);
+			await slackClient.Send(message);
+		}
+
+		private static (bool found, EventInfoDTO eventInfo) findInOrOutEvent(List<EventInfoDTO> events, bool isHolderIn) {
+			EventInfoDTO eventInfo = null;
+
+			if (events.Count > 0) {
+				if (isHolderIn) {
+					eventInfo = events.LastOrDefault(evInf => evInf.EventCode == 105);
+				} else {
+					eventInfo = events.FirstOrDefault(evInf => evInf.EventCode == 105 
+																&& evInf.TargetAreaName.Trim().ToLower().Equals("улица")
+																);
+				}
+			}
+
+			return (found: eventInfo != null, eventInfo);
 		}
 
 		private static string buildEventsInfo(List<EventInfoDTO> events) {
 			string info = string.Empty;
 
 			int eventNumber = 1;
-			foreach(var eventDTO in events) {
+			foreach (var eventDTO in events) {
 				info += $"*{eventNumber++}. {eventDTO.ObjectName ?? "Контрольная точка не задана"}*\n" +
 						$"{eventDTO.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
 						$"{((eventDTO.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
@@ -199,7 +308,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			image.Mutate(im => im.EntropyCrop());
 			int heightAfterEntropyCrop = image.Height;
 
-			if(image.Height > 250) {
+			if (image.Height > 250) {
 				image.Mutate(im => im.Resize(250 * image.Width / image.Height, 250));
 
 				bool isHeightCroped = MathF.Abs(heightAfterEntropyCrop - heightBeforeEntropyCrop) > 5;
@@ -209,7 +318,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 				int newImageWidth = image.Width;
 				int newImageHeight = isHeightCroped ? image.Height - 10 : image.Height;
 
-				if(image.Width > 250) {
+				if (image.Width > 250) {
 					xStartCropPoint = 10;
 					newImageWidth = image.Width - 10 - 10;
 				}

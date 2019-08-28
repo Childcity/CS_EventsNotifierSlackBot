@@ -6,6 +6,8 @@ namespace CS_EventsNotifierSlackBot.WebSockets.DTO {
 
 	public partial class HolderLocationPeriodDTO {
 
+		public QueryType.Type QueryType { get; set; }
+
 		public string HolderSurname { get; set; }
 
 		public string HolderName { get; set; }
@@ -13,6 +15,8 @@ namespace CS_EventsNotifierSlackBot.WebSockets.DTO {
 		public string HolderMiddlename { get; set; }
 
 		public TimePeriodDTO TimePeriod { get; set; }
+
+		public bool? IsHolderIn { get; set; }
 	}
 
 	public partial class HolderLocationPeriodDTO {

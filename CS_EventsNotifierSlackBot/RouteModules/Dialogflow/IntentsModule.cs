@@ -19,13 +19,17 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 					RequestWebHookIntent incomeWebHook = RequestWebHookIntent.FromJson(RequestStream.FromStream(Request.Body).AsString());
 
 					IntentType.Type intentType = IntentType.GetType(incomeWebHook?.QueryResult?.Intent?.Name);
+					object Parameters = incomeWebHook?.QueryResult?.Parameters;
 
 					switch(intentType) {
 						case IntentType.Type.Undefined:
 							break;
 
 						case IntentType.Type.WhereCoworker:
-							return onWhereCoworker(WhereCoworkerDTO.FromObject(incomeWebHook?.QueryResult?.Parameters));
+							return onWhereCoworker(WhereCoworkerDTO.FromObject(Parameters));
+
+						case IntentType.Type.WhenCoworker:
+							return onWhenCoworker(WhenCoworkerDTO.FromObject(Parameters));
 					}
 
 				} catch(Exception e) {
@@ -34,6 +38,42 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 
 				return 404;
 			});
+		}
+
+		private Response onWhenCoworker(WhenCoworkerDTO userQuery) {
+			Console.WriteLine(userQuery.ToJson(true));
+
+			var tp = new TimePeriodDTO() {
+				StartTime = DateTimeOffset.Now.Date.Add(TimeSpan.Zero),
+				EndTime = DateTimeOffset.Now.Date.Add(new TimeSpan(23, 59, 59))
+			};
+
+			// if user hasn't entered any data and time -> set to current date and time
+			if (! userQuery.Date.HasValue) {
+				userQuery.Date = DateTimeOffset.UtcNow;
+			}
+
+			// recognize any possible time and data
+			tp = RecognizeDate(userQuery.Date, oldTp: tp);
+
+			// create params for Event Server request
+			var holderRequest = new HolderLocationPeriodDTO() {
+				QueryType = QueryType.GetType(userQuery.QueryType),
+				HolderName = userQuery.TargetName.Replace("?", ""),
+				HolderMiddlename = userQuery.TargetMiddlename.Replace("?", ""),
+				HolderSurname = userQuery.TargetLastname.Replace("?", ""),
+				TimePeriod = tp,
+				IsHolderIn = userQuery.InOrOut == null ? new bool?() : 
+								userQuery.InOrOut.Trim().Equals("пришла", StringComparison.OrdinalIgnoreCase) ? true : false
+			};
+
+			Console.WriteLine(holderRequest.ToJson(true));
+
+			foreach(var eventsListener in GlobalScope.CSEventsListeners) {
+				eventsListener.PostCommand(new RequestHolderLocation(holderRequest));
+			}
+
+			return 200;
 		}
 
 		private Response onWhereCoworker(WhereCoworkerDTO userQuery) {
@@ -48,20 +88,21 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 
 			// if user hasn't entered any data and time -> set to current date and time
 			if(userQuery.TimePeriod == null 
-				&& userQuery.Date == null 
+				&& (! userQuery.Date.HasValue)
 				&& userQuery.DateTimeObject == null 
-				&& userQuery.Time == null)
+				&& (! userQuery.Time.HasValue))
 			{
-				userQuery.DateTimeObject = new DateTimeWraper(DateTimeOffset.Now);
+				userQuery.DateTimeObject = new DateTimeWraper(DateTimeOffset.UtcNow);
 			}
 
 			// recognize any possible time and data
-			tp = RecognizeDate(userQuery, oldTp: tp);
+			tp = RecognizeDate(userQuery.Date, oldTp: tp);
 			tp = RecognizeTime(userQuery, oldTp: tp);
 			tp = RecognizeDateTime(userQuery, oldTp: tp);
 
 			// create params for Event Server request
 			var whereHolderRequest = new HolderLocationPeriodDTO() {
+				QueryType = QueryType.Type.Where,
 				HolderName = userQuery.TargetName.Replace("?", ""),
 				HolderMiddlename = userQuery.TargetMiddlename.Replace("?", ""),
 				HolderSurname = userQuery.TargetLastname.Replace("?", ""),
@@ -82,19 +123,23 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 			}.ToJson();
 		}
 
-		private static TimePeriodDTO RecognizeDate(WhereCoworkerDTO userQuery, TimePeriodDTO oldTp) {
+		private static TimePeriodDTO RecognizeDate(DateTimeOffset? date, TimePeriodDTO oldTp) {
 			TimePeriodDTO newTp = new TimePeriodDTO(oldTp);
 
 			// if user input date
-			if(userQuery.Date.HasValue) {
-				DateTimeOffset newDate = userQuery.Date.Value.Date.Add(TimeSpan.Zero); //extract date with zero time
-				TimeSpan? delta = oldTp.StartTime?.Subtract(newDate);
-				newTp.StartTime = oldTp.StartTime - delta;
-				newTp.EndTime = oldTp.EndTime - delta; //delta the same as for tp.StartTime
+			if(date.HasValue) {
+				DateTimeOffset newDateTimeUtc = date.Value.UtcDateTime;
+				DateTimeOffset newDate = newDateTimeUtc.Date.Add(TimeSpan.Zero); //extract date with zero time
+
+				TimeSpan? deltaStart = oldTp.StartTime?.Date.Subtract(newDate.Date);
+				TimeSpan? deltaEnd = oldTp.EndTime?.Date.Subtract(newDate.Date);
+
+				newTp.StartTime = oldTp.StartTime.Value.DateTime - deltaStart;
+				newTp.EndTime = oldTp.EndTime.Value.DateTime - deltaEnd; //delta the same as for tp.StartTime
 
 				Console.WriteLine("\nNew Date:");
 				Console.WriteLine("newDate: " + newDate.ToString());
-				Console.WriteLine("delta: " + delta.ToString());
+				Console.WriteLine("delta: " + deltaStart.ToString() + "   " + deltaEnd.ToString());
 				Console.WriteLine("DateExist: " + newTp.StartTime.ToString() + " " + newTp.EndTime.ToString());
 			}
 

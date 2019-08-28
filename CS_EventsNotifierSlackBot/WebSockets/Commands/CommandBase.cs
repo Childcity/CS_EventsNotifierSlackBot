@@ -39,6 +39,6 @@ namespace CS_EventsNotifierSlackBot.WebSockets.Commands {
 
 	public static class SerializeCommandBase {
 
-		public static string ToJson(this CommandBase self) => JsonConvert.SerializeObject(self, JsonConverterSettings.Settings);
+		public static string ToJson(this CommandBase self, bool indented = false) => JsonConvert.SerializeObject(self, indented ? Formatting.Indented : Formatting.None, JsonConverterSettings.Settings);
 	}
 }

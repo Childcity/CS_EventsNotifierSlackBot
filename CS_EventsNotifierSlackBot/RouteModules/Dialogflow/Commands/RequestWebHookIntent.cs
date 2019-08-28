@@ -94,52 +94,7 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow.Commands {
 		public long? LifespanCount { get; set; }
 
 		[JsonProperty("parameters", NullValueHandling = NullValueHandling.Ignore)]
-		public OutputContextParameters Parameters { get; set; }
-	}
-
-	public partial class OutputContextParameters {
-
-		[JsonProperty("target-name", NullValueHandling = NullValueHandling.Ignore)]
-		public string TargetName { get; set; }
-
-		[JsonProperty("target-name.original", NullValueHandling = NullValueHandling.Ignore)]
-		public string TargetNameOriginal { get; set; }
-
-		[JsonProperty("target-lastname", NullValueHandling = NullValueHandling.Ignore)]
-		public string TargetLastname { get; set; }
-
-		[JsonProperty("target-lastname.original", NullValueHandling = NullValueHandling.Ignore)]
-		public string TargetLastnameOriginal { get; set; }
-
-		[JsonProperty("date", NullValueHandling = NullValueHandling.Ignore)]
-		public DateTimeOffset? Date { get; set; }
-
-		[JsonProperty("date.original", NullValueHandling = NullValueHandling.Ignore)]
-		public string DateOriginal { get; set; }
-
-		[JsonProperty("time-period", NullValueHandling = NullValueHandling.Ignore)]
-		public TimePeriodDTO TimePeriod { get; set; }
-
-		[JsonProperty("time-period.original", NullValueHandling = NullValueHandling.Ignore)]
-		public string TimePeriodOriginal { get; set; }
-
-		[JsonProperty("target-middlename", NullValueHandling = NullValueHandling.Ignore)]
-		public string TargetMiddlename { get; set; }
-
-		[JsonProperty("target-middlename.original", NullValueHandling = NullValueHandling.Ignore)]
-		public string TargetMiddlenameOriginal { get; set; }
-
-		[JsonProperty("time", NullValueHandling = NullValueHandling.Ignore)]
-		public string Time { get; set; }
-
-		[JsonProperty("time.original", NullValueHandling = NullValueHandling.Ignore)]
-		public string TimeOriginal { get; set; }
-
-		[JsonProperty("date_time", NullValueHandling = NullValueHandling.Ignore)]
-		public DateTimeWraper DateTimeObject { get; set; }
-
-		[JsonProperty("date-time.original", NullValueHandling = NullValueHandling.Ignore)]
-		public string DateTimeOriginal { get; set; }
+		public object OutputContextParameters { get; set; }
 	}
 
 	public partial class RequestWebHookIntent {

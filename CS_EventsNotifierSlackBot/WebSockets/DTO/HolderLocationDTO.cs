@@ -11,6 +11,10 @@ namespace CS_EventsNotifierSlackBot.WebSockets.DTO {
 		public TimePeriodDTO TimePeriod { get; set; }
 
 		public List<EventInfoDTO> EventsInfo { get; set; }
+
+		public QueryType.Type QueryType { get; set; }
+
+		public bool? IsHolderIn { get; set; }
 	}
 
 	public partial class HolderLocationDTO {
@@ -20,8 +24,8 @@ namespace CS_EventsNotifierSlackBot.WebSockets.DTO {
 		public static HolderLocationDTO FromJson(string json) => JsonConvert.DeserializeObject<HolderLocationDTO>(json, JsonConverterSettings.Settings);
 	}
 
-	public static class SerializeCoworkerLocationDTO {
+	public static class SerializeHolderLocationDTO {
 
-		public static string ToJson(this EventDTO self) => JsonConvert.SerializeObject(self, JsonConverterSettings.Settings);
+		public static string ToJson(this HolderLocationDTO self, bool indented = false) => JsonConvert.SerializeObject(self, indented ? Formatting.Indented : Formatting.None, JsonConverterSettings.Settings);
 	}
 }

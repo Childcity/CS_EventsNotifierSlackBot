@@ -12,7 +12,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets.DTO {
 
 		public decimal? CardNumber { get; set; }
 
-		public DateTime? EventTime { get; set; }
+		public DateTimeOffset? EventTime { get; set; }
 
 		//
 
