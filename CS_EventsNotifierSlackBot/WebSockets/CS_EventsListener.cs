@@ -127,7 +127,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			Console.WriteLine(holderLocation.ToJson(true));
 
 			if (holderLocation.HolderInfo.HolderName == null) {
-				message.Text = $"Не нашел событий с указанным сотрудником. Возможно его небыло {holderLocation.TimePeriod.StartTime?.Date.ToString("dd MMMM yyyy", CultureInfo.CreateSpecificCulture("ru-RU"))}";
+				message.Text = $"Не нашел событий с указанным сотрудником. Возможно его небыло {holderLocation.TimePeriod.EndTime?.Date.ToString("dd MMMM yyyy", CultureInfo.CreateSpecificCulture("ru-RU"))}";
 			} else {
 				var queryType = holderLocation.QueryType;
 				if (queryType == QueryType.Type.Where) {
@@ -146,22 +146,18 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 							if (foundedEvent.found) {
 								message.Text = $"Да, сотрудник\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
 										   $"*пришёл*\n" +
-										   //$"*{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}*\n" +
 										   $"в {foundedEvent.eventInfo.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
-										   //$"{((foundedEvent.eventInfo.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
 										   $"Осуществление прохода по пропуску | " +
 											$"{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}\n";
 							} else {
 								message.Text = $"Нет, сотрудника \n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
 											$"*не было*";
 							}
-						} else { // юзер хочет узнать (Во сколько)/(когда) сотрудник пришел
+						} else { // юзер хочет узнать (Во сколько)/(когда)/(в котором часу) сотрудник пришел
 							if (foundedEvent.found) {
 								message.Text = $"*Сотрудник*\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
 											$"*пришёл*\n" +
-											//$"*{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}*\n" +
 											$"в {foundedEvent.eventInfo.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
-											//$"{((foundedEvent.eventInfo.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
 											$"Осуществление прохода по пропуску | " +
 											$"{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}\n";
 							} else {
@@ -174,9 +170,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 							if (foundedEvent.found) {
 								message.Text = $"Да, сотрудник\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
 										   $"*ушёл*\n" +
-										   //$"*{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}*\n" +
 										   $"в {foundedEvent.eventInfo.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
-										   //$"{((foundedEvent.eventInfo.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
 										   $"Осуществление прохода по пропуску | " +
 											$"{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}\n";
 							} else {
@@ -195,9 +189,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 							if (foundedEvent.found) {
 								message.Text = $"*Сотрудник*\n{holderLocation.HolderInfo.HolderSurname ?? ""} {holderLocation.HolderInfo.HolderName ?? ""} {holderLocation.HolderInfo.HolderMiddlename ?? ""}\n" +
 											$"*ушёл*\n" +
-											//$"*{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}*\n" +
 											$"в {foundedEvent.eventInfo.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
-											//$"{((foundedEvent.eventInfo.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
 											$"Осуществление прохода по пропуску | " +
 											$"{foundedEvent.eventInfo.ObjectName ?? "Контрольная точка не задана"}\n";
 							} else {
@@ -294,7 +286,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 			int eventNumber = 1;
 			foreach (var eventDTO in events) {
-				info += $"*{eventNumber++}. {eventDTO.ObjectName ?? "Контрольная точка не задана"}*\n" +
+				info += $"*{eventNumber++}. {eventDTO.ObjectName ?? "Контрольная точка не задана"} *\n" +
 						$"{eventDTO.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
 						$"{((eventDTO.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
 						$"Осуществление прохода по пропуску\n";

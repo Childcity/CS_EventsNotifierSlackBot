@@ -44,8 +44,8 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 			Console.WriteLine(userQuery.ToJson(true));
 
 			var tp = new TimePeriodDTO() {
-				StartTime = DateTimeOffset.Now.Date.Add(TimeSpan.Zero),
-				EndTime = DateTimeOffset.Now.Date.Add(new TimeSpan(23, 59, 59))
+				StartTime = DateTimeOffset.UtcNow.Date.Add(TimeSpan.Zero),
+				EndTime = DateTimeOffset.UtcNow.Date.Add(new TimeSpan(23, 59, 59))
 			};
 
 			// if user hasn't entered any data and time -> set to current date and time
@@ -54,7 +54,7 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 			}
 
 			// recognize any possible time and data
-			tp = RecognizeDate(userQuery.Date, oldTp: tp);
+			tp = RecognizeDate(date: userQuery.Date, oldTp: tp);
 
 			// create params for Event Server request
 			var holderRequest = new HolderLocationPeriodDTO() {
@@ -116,11 +116,12 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 			}
 
 			// send response to Dialogflow (Dialogflow automatically resend it to Slack, Telegram, Skype, etc.)
-			return new ResponseWebHookIntent() {
-				FulfillmentText = $"*Буду искать:* '{whereHolderRequest.HolderName} {whereHolderRequest.HolderMiddlename} {whereHolderRequest.HolderSurname}'\n" +
-							      $"*c :* {whereHolderRequest.TimePeriod.StartTime.ToString()}\n" +
-								  $"*по:* {whereHolderRequest.TimePeriod.EndTime.ToString()}"
-			}.ToJson();
+			//return new ResponseWebHookIntent() {
+			//	FulfillmentText = $"*Буду искать:* '{whereHolderRequest.HolderName} {whereHolderRequest.HolderMiddlename} {whereHolderRequest.HolderSurname}'\n" +
+			//				      $"*c :* {whereHolderRequest.TimePeriod.StartTime.ToString()}\n" +
+			//					  $"*по:* {whereHolderRequest.TimePeriod.EndTime.ToString()}"
+			//}.ToJson();
+			return 200;
 		}
 
 		private static TimePeriodDTO RecognizeDate(DateTimeOffset? date, TimePeriodDTO oldTp) {
