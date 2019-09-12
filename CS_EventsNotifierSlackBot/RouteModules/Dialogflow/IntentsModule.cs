@@ -6,7 +6,10 @@ using CS_EventsNotifierSlackBot.WebSockets.DTO;
 using Nancy;
 using Nancy.Extensions;
 using Nancy.IO;
+using Newtonsoft.Json;
+using SlackBotMessages;
 using System;
+using System.Linq;
 
 namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 
@@ -17,11 +20,22 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 				try {
 					// body -> json -> RequestWebHookIntent
 					RequestWebHookIntent incomeWebHook = RequestWebHookIntent.FromJson(RequestStream.FromStream(Request.Body).AsString());
-
 					IntentType.Type intentType = IntentType.GetType(incomeWebHook?.QueryResult?.Intent?.Name);
 					object Parameters = incomeWebHook?.QueryResult?.Parameters;
 
-					switch(intentType) {
+					// Here is a temporary fix of bug in Dialogflow. 
+					// Slack have changed api and today (12.09.2019) Dialogflow not correct works with unswers to slack
+							if (intentType == IntentType.Type.Undefined || (incomeWebHook.QueryResult.AllRequiredParamsPresent ?? false) == false) {
+								string msg = string.Empty;
+								incomeWebHook.QueryResult.FulfillmentMessages.ForEach(fulFlMsg => msg += fulFlMsg.Text.TextText.FirstOrDefault() + "\n");
+								string slackWebHookUrl = Environment.GetEnvironmentVariable("SLACK_WEBHOOK_URL")
+									?? throw new ArgumentNullException("slackWebHookUrl", "EnvironmentVariable 'SLACK_WEBHOOK_URL' doesn't set!");
+
+								new SbmClient(slackWebHookUrl).Send(new SlackBotMessages.Models.Message(msg)).Wait();
+								return msg;
+							}
+
+					switch (intentType) {
 						case IntentType.Type.Undefined:
 							break;
 
@@ -41,7 +55,7 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 		}
 
 		private Response onWhenCoworker(WhenCoworkerDTO userQuery) {
-			Console.WriteLine(userQuery.ToJson(true));
+			//Console.WriteLine(userQuery.ToJson(true));
 
 			var tp = new TimePeriodDTO() {
 				StartTime = DateTimeOffset.UtcNow.Date.Add(TimeSpan.Zero),
