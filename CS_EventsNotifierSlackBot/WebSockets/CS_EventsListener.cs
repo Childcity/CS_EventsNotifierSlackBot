@@ -135,6 +135,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 				if (queryType == QueryType.Type.Where) {
 					message.Text = $"*Сотрудник* {holderNameStr}\n" +
 							   $"{buildEventsInfo(holderLocation.EventsInfo)}";
+
 				} else { // юзер хочет узнать зашёл/вышел сотрудник
 					Debug.Assert(holderLocation.IsHolderIn.HasValue); // should be always true here!
 					
@@ -144,55 +145,67 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 					string eventInTimeStr = $"{foundedEvent.eventInfo[0].EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))}";
 					string eventOutTimeStr = $"{foundedEvent.eventInfo[1].EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))}";
 
-					if (holderLocation.IsHolderIn.Value) { // зашёл?
-						if (queryType == QueryType.Type.Empty) { // юзер хочет ответ (Да, зашёл)/(Нет, не зашёл)
-							if (foundedEvent.found) {
-								message.Text = $"Да, {holderNameStr}\n" +
-											$"*зашёл* в {eventInTimeStr} через {eventObjNameStr}\n" +
-											$"*вышел* в {eventOutTimeStr} через {eventObjNameStr}\n";
-							} else {
-								message.Text = $"Нет, {holderNameStr}\n" +
-											$"*не было*";
-							}
-						} else { // юзер хочет узнать (Во сколько)/(когда)/(в котором часу) сотрудник зашёл
-							if (foundedEvent.found) {
-								message.Text = $"{holderNameStr}\n" +
-											$"*зашёл* в {eventInTimeStr} через {eventObjNameStr}\n";
-							} else {
-								message.Text = $"Сотрудника \n{holderNameStr}\n" +
-											$"*не было*";
-							}
+					// юзер хочет узнать сколько по времени был сотрудник
+					if (queryType == QueryType.Type.HowLong) {
+						if (foundedEvent.found) {
+							message.Text = $"{holderNameStr}\n" +
+										$"был на территории {(foundedEvent.eventInfo[1].EventTime - foundedEvent.eventInfo[0].EventTime)?.ToString(@"%h'ч. '%m'мин.'")}";
+						} else {
+							message.Text = $"Сотрудника \n{holderNameStr}\n" +
+										$"*не было*";
 						}
-					} else { // вышел?
-						if (queryType == QueryType.Type.Empty) {
-							if (foundedEvent.found) {
-								message.Text = $"Да, {holderNameStr}\n" +
-										   $"*вышел* в {eventOutTimeStr} через {eventObjNameStr}\n";
-							} else {
-								message.Text = $"Не нашел события *выхода* из територии";
 
-								try {
-									var lastEvent = holderLocation.EventsInfo.First(evInf => evInf.EventCode == 105);
-									message.Text += $"\nПоследнее событие прохода:\n{holderNameStr}\n" +
-										   $"*{((lastEvent.Direction ?? 0) == 0 ? "*Вход*" : "*Выход*")} " +
-										   $"через {lastEvent.ObjectName ?? "\"Контрольная точка не задана\""}*\n" +
-										   $"в {lastEvent.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))}";
-								} catch (Exception) { }
+					} else {
+						if (holderLocation.IsHolderIn.Value) { // зашёл?
+							if (queryType == QueryType.Type.Empty) { // юзер хочет ответ (Да, зашёл)/(Нет, не зашёл)
+								if (foundedEvent.found) {
+									message.Text = $"Да, {holderNameStr}\n" +
+												$"*зашёл* в {eventInTimeStr} через {eventObjNameStr}\n" +
+												$"*вышел* в {eventOutTimeStr} через {eventObjNameStr}\n";
+								} else {
+									message.Text = $"Нет, {holderNameStr}\n" +
+												$"*не было*";
+								}
+							} else { // юзер хочет узнать (Во сколько)/(когда)/(в котором часу) сотрудник зашёл
+								if (foundedEvent.found) {
+									message.Text = $"{holderNameStr}\n" +
+												$"*зашёл* в {eventInTimeStr} через {eventObjNameStr}\n";
+								} else {
+									message.Text = $"Сотрудника \n{holderNameStr}\n" +
+												$"*не было*";
+								}
 							}
-						} else { // юзер хочет узнать Во сколько/когда сотрудник вышел
-							if (foundedEvent.found) {
-								message.Text = $"{holderNameStr}\n" +
-											$"*вышел* в {eventOutTimeStr} через {eventObjNameStr}";
-							} else {
-								message.Text = $"Не нашел события *выхода* из територии";
+						} else { // вышел?
+							if (queryType == QueryType.Type.Empty) {
+								if (foundedEvent.found) {
+									message.Text = $"Да, {holderNameStr}\n" +
+											   $"*вышел* в {eventOutTimeStr} через {eventObjNameStr}\n";
+								} else {
+									message.Text = $"Не нашел события *выхода* из територии";
 
-								try {
-									var lastEvent = holderLocation.EventsInfo.First(evInf => evInf.EventCode == 105);
-									message.Text += $"\nПоследнее событие прохода:\n{holderNameStr}\n" +
-										   $"*{((lastEvent.Direction ?? 0) == 0 ? "*Вход*" : "*Выход*")} " +
-										   $"через {lastEvent.ObjectName ?? "\"Контрольная точка не задана\""}*\n" +
-										   $"в {lastEvent.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))}";
-								} catch (Exception) { }
+									try {
+										var lastEvent = holderLocation.EventsInfo.First(evInf => evInf.EventCode == 105);
+										message.Text += $"\nПоследнее событие прохода:\n{holderNameStr}\n" +
+											   $"*{((lastEvent.Direction ?? 0) == 0 ? "*Вход*" : "*Выход*")} " +
+											   $"через {lastEvent.ObjectName ?? "\"Контрольная точка не задана\""}*\n" +
+											   $"в {lastEvent.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))}";
+									} catch (Exception) { }
+								}
+							} else { // юзер хочет узнать Во сколько/когда сотрудник вышел
+								if (foundedEvent.found) {
+									message.Text = $"{holderNameStr}\n" +
+												$"*вышел* в {eventOutTimeStr} через {eventObjNameStr}";
+								} else {
+									message.Text = $"Не нашел события *выхода* из територии";
+
+									try {
+										var lastEvent = holderLocation.EventsInfo.First(evInf => evInf.EventCode == 105);
+										message.Text += $"\nПоследнее событие прохода:\n{holderNameStr}\n" +
+											   $"*{((lastEvent.Direction ?? 0) == 0 ? "*Вход*" : "*Выход*")} " +
+											   $"через {lastEvent.ObjectName ?? "\"Контрольная точка не задана\""}*\n" +
+											   $"в {lastEvent.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))}";
+									} catch (Exception) { }
+								}
 							}
 						}
 					}

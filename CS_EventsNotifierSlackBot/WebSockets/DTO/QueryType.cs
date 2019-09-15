@@ -9,7 +9,8 @@ namespace CS_EventsNotifierSlackBot.WebSockets.DTO {
 			InWhatTime,
 			Where,
 			When,
-			WhatPlace
+			WhatPlace,
+			HowLong
 		}
 
 		public static Type GetType(string queryType) {
@@ -23,6 +24,8 @@ namespace CS_EventsNotifierSlackBot.WebSockets.DTO {
 						return Type.When;
 					case "куда":
 						return Type.WhatPlace;
+					case "сколько":
+						return Type.HowLong;
 				}
 			}
 
