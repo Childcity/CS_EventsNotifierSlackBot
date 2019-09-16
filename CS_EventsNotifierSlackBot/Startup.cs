@@ -4,10 +4,13 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Nancy.Owin;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CS_EventsNotifierSlackBot {
 
 	public class Startup {
+		private CancellationTokenSource tokenSource;
 
 		// This method gets called by the runtime. Use this method to add services to the container.
 		// For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
@@ -31,10 +34,20 @@ namespace CS_EventsNotifierSlackBot {
 
 			// use NancyFX by Owin
 			app.UseOwin(x => x.UseNancy());
+
+			{
+				// Run database server emulator (for testing this app without server and database)
+				tokenSource = new CancellationTokenSource();
+				string url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.Replace("http", "ws")?.Replace("https", "ws") ?? "ws:/cs-events.herokuapp.com/ws";
+				var emulator = new TestServer.ResponseEmulator(new Uri(url + "/ws"), tokenSource.Token);
+				Task.Run(async () => await emulator.Listen());
+			}
 		}
 
 		private void OnShutdown() {
 			//TODO: implement proper cancelation
+			tokenSource?.Cancel();
+			tokenSource?.Dispose();
 		}
 	}
 }
