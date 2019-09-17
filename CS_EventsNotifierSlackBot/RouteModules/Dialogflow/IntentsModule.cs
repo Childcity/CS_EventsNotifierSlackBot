@@ -16,7 +16,7 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 	public class IntentsModule: NancyModule {
 
 		public IntentsModule() : base("") {
-			Post("/intents", params_ => {
+			base.Post("/intents", params_ => {
 				try {
 					// body -> json -> RequestWebHookIntent
 					RequestWebHookIntent incomeWebHook = RequestWebHookIntent.FromJson(RequestStream.FromStream(Request.Body).AsString());
@@ -25,26 +25,26 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 
 					// Here is a temporary fix of bug in Dialogflow. 
 					// Slack have changed api and today (12.09.2019) Dialogflow not correct works with unswers to slack
-							if (intentType == IntentType.Type.Undefined || (incomeWebHook.QueryResult.AllRequiredParamsPresent ?? false) == false) {
-								string msg = string.Empty;
-								incomeWebHook.QueryResult.FulfillmentMessages.ForEach(fulFlMsg => msg += fulFlMsg.Text.TextText.FirstOrDefault() + "\n");
-								string slackWebHookUrl = Environment.GetEnvironmentVariable("SLACK_WEBHOOK_URL")
-									?? throw new ArgumentNullException("slackWebHookUrl", "EnvironmentVariable 'SLACK_WEBHOOK_URL' doesn't set!");
-
-								new SbmClient(slackWebHookUrl).Send(new SlackBotMessages.Models.Message(msg)).Wait();
-								return msg;
-							}
+					if (intentType == IntentType.Type.Undefined || (incomeWebHook?.QueryResult?.AllRequiredParamsPresent ?? false) == false) { 
+						return buildFulfillmentMessage(incomeWebHook);
+					}
 
 					switch (intentType) {
 						case IntentType.Type.Undefined:
 							break;
 
 						case IntentType.Type.WhereCoworker:
-							return onWhereCoworker(WhereCoworkerDTO.FromObject(Parameters));
+							//return onWhereCoworker(WhereCoworkerDTO.FromObject(Parameters));
+							onWhereCoworker(WhereCoworkerDTO.FromObject(Parameters));
+							break;
 
 						case IntentType.Type.WhenCoworker:
-							return onWhenCoworker(WhenCoworkerDTO.FromObject(Parameters));
+							//return onWhenCoworker(WhenCoworkerDTO.FromObject(Parameters));
+							onWhenCoworker(WhenCoworkerDTO.FromObject(Parameters));
+							break;
 					}
+
+					return buildFulfillmentMessage(incomeWebHook);
 
 				} catch(Exception e) {
 					Console.WriteLine("Exception: " + e.Message + "\n" + e.StackTrace);
@@ -52,6 +52,16 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 
 				return 404;
 			});
+		}
+
+		private static string buildFulfillmentMessage(RequestWebHookIntent incomeWebHook) {
+			string msg = string.Empty;
+			incomeWebHook.QueryResult.FulfillmentMessages.ForEach(fulFlMsg => msg += fulFlMsg.Text.TextText.FirstOrDefault() + "\n");
+			string slackWebHookUrl = Environment.GetEnvironmentVariable("SLACK_WEBHOOK_URL")
+				?? throw new ArgumentNullException("slackWebHookUrl", "EnvironmentVariable 'SLACK_WEBHOOK_URL' doesn't set!");
+
+			new SbmClient(slackWebHookUrl).Send(new SlackBotMessages.Models.Message(msg)).Wait();
+			return msg;
 		}
 
 		private Response onWhenCoworker(WhenCoworkerDTO userQuery) {

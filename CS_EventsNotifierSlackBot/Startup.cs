@@ -38,7 +38,7 @@ namespace CS_EventsNotifierSlackBot {
 			{
 				// Run database server emulator (for testing this app without server and database)
 				tokenSource = new CancellationTokenSource();
-				string url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.Replace("http", "ws")?.Replace("https", "ws") ?? "ws:/cs-events.herokuapp.com/ws";
+				string url = env.IsDevelopment() ? Environment.GetEnvironmentVariable("ASPNETCORE_URLS") : "ws://cs-events.herokuapp.com";
 				var emulator = new TestServer.ResponseEmulator(new Uri(url + "/ws"), tokenSource.Token);
 				Task.Run(async () => await emulator.Listen());
 			}

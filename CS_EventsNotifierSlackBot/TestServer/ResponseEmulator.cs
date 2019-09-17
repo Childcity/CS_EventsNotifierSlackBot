@@ -1,11 +1,11 @@
 namespace TestServer {
-
 	using CS_EventsNotifierSlackBot.RouteModules.Dialogflow.DTO;
 	using CS_EventsNotifierSlackBot.WebSockets.Commands;
 	using CS_EventsNotifierSlackBot.WebSockets.DTO;
 	using System;
 	using System.Collections.Generic;
 	using System.IO;
+	using System.Linq;
 	using System.Net.WebSockets;
 	using System.Text;
 	using System.Threading;
@@ -67,11 +67,13 @@ namespace TestServer {
 		}
 
 		private async Task processResult(string message) {
-			if(CS_EventsNotifierSlackBot.Global.GlobalScope.CSEventsListeners.Count > 0)
+			if(CS_EventsNotifierSlackBot.Global.GlobalScope.CSEventsListeners.Count > 1)
 				return;
 
+			await Task.Delay(1000);
+
 			try {
-				Console.WriteLine("Emulator Received: " + message);
+				Console.WriteLine("Emulator received: " + message);
 
 				CommandBase command = CommandBase.FromJson(message);
 
@@ -80,10 +82,15 @@ namespace TestServer {
 				if (cmdType == RequestHolderLocation.Name) {
 					HolderLocationPeriodDTO locationPeriod = HolderLocationPeriodDTO.FromObject(command.Params);
 
-					string keyToFindLast = locationPeriod.HolderName+ locationPeriod.HolderMiddlename+ locationPeriod.HolderSurname+ locationPeriod.TimePeriod.StartTime+ locationPeriod.TimePeriod.EndTime;
+					string keyToFindLast = locationPeriod.HolderName.Trim().ToLower() 
+						+ locationPeriod.HolderMiddlename.Trim().ToLower() 
+						+ locationPeriod.HolderSurname.Trim().ToLower() 
+						+ locationPeriod.TimePeriod.EndTime?.Date;
+
 					List<EventInfoDTO> eventsInfo;
 					if (lastGeneratedEvents.ContainsKey(keyToFindLast)) {
 						lastGeneratedEvents.TryGetValue(keyToFindLast, out eventsInfo);
+						eventsInfo = eventsInfo.Where(ev => ev.EventTime >= locationPeriod.TimePeriod.StartTime && ev.EventTime <= locationPeriod.TimePeriod.EndTime).ToList();
 					} else {
 						eventsInfo = generateEvents(locationPeriod.TimePeriod);
 						lastGeneratedEvents.Add(keyToFindLast, eventsInfo);
@@ -97,18 +104,18 @@ namespace TestServer {
 						TimePeriod = locationPeriod.TimePeriod,
 						HolderInfo = new EventDTO() {
 							CardNumber = 421449585,
-							HolderType = "Visitor",
+							HolderType = "\u041F\u043E\u0441\u0435\u0442\u0438\u0442\u0435\u043B\u044C", //Посетитель
 							HolderName = locationPeriod.HolderName,
 							HolderMiddlename = locationPeriod.HolderMiddlename,
 							HolderSurname = locationPeriod.HolderSurname,
-							HolderDepartment = "Отдел кадров",
-							HolderTabNumber = "Tabel 845"
+							HolderDepartment = "\u041E\u0442\u0434\u0435\u043B \u043A\u0430\u0434\u0440\u043E\u0432", //Отдел кадров
+							HolderTabNumber = "\u0422\u0430\u0431\u0435\u043B\u044C 845" //Табель 845
 						},
 						EventsInfo = eventsInfo
 					};
 
 					var response = new ResponseHolderLocation(holderLocationDTO);
-					//await onResponseWhereCoworker(HolderLocationDTO.FromObject(command.Params));
+
 					byte[] buffer = Encoding.UTF8.GetBytes(response.ToJson());
 					await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, token);
 				}
@@ -133,11 +140,11 @@ namespace TestServer {
 					EventCode = 105,
 					EventTime = (endTime -= timeDelta + TimeSpan.FromMinutes(rnd.Next(59)))?.DateTime,
 
-					StartAreaName = ((rnd.Next() % 2) == 0 || i == 0) ? "Улица" : "Офис",
-					TargetAreaName = ((rnd.Next() % 2) == 0 || i == (capacity - 1)) ? "Улица" : "Офис",
+					StartAreaName = ((rnd.Next() % 2) == 0 || i == 0) ? "\u0423\u043B\u0438\u0446\u0430" : "\u041E\u0444\u0438\u0441", //улица/офис
+					TargetAreaName = ((rnd.Next() % 2) == 0 || i == (capacity - 1)) ? "\u0423\u043B\u0438\u0446\u0430" : "\u041E\u0444\u0438\u0441",
 
-					ObjectType = "Двухсторонний c картой",
-					ObjectName = "Двери №" + rnd.Next(10)
+					ObjectType = "\u0414\u0432\u0435\u0440\u0438 \u0441 \u0434\u0432\u043E\u0439\u043D\u044B\u043C \u0437\u0430\u043C\u043A\u043E\u043C", //Двери с двойным замком
+					ObjectName = "\u0414\u0432\u0435\u0440\u0438 #" + rnd.Next(10) //Двери #
 				});
 			}
 
