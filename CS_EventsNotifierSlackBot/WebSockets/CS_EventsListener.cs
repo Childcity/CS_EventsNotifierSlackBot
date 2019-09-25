@@ -149,8 +149,8 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 			// найдем событие входа/выхода на/из територию
 			var foundedEventInf = findInOrOutEvent(holderLocation.EventsInfo);
-			string eventObjNameInStr = $"{foundedEventInf?[0].ObjectName ?? "\"Контрольная точка не задана\""}";
-			string eventObjNameOutStr = $"{foundedEventInf?[0].ObjectName ?? "\"Контрольная точка не задана\""}";
+			string eventObjNameInStr = $"{foundedEventInf?[0]?.ObjectName ?? "\"Контрольная точка не задана\""}";
+			string eventObjNameOutStr = $"{foundedEventInf?[0]?.ObjectName ?? "\"Контрольная точка не задана\""}";
 
 			// юзер хочет узнать сколько по времени был(а) сотрудник
 			if (queryType == QueryType.Type.HowLong) {
@@ -229,7 +229,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 			if (eventDTO.CardNumber.HasValue) {
 				if (!GlobalScope.CachedImages.ContainsKey(eventDTO.CardNumber.Value)) {
-					if (eventDTO.HolderPhoto != null) {
+					if (eventDTO?.HolderPhoto != null) {
 						using (var image = Image.Load<Rgb24>(eventDTO.HolderPhoto)) {
 							prepareImage(image);
 							GlobalScope.CachedImages[eventDTO.CardNumber.Value] = new MemoryStream();
@@ -251,10 +251,10 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			Console.WriteLine(imagePath);
 
 			await sendResponse(new Message() {
-				Text = $"*Сотрудник*\n{eventDTO.HolderSurname ?? ""} {eventDTO.HolderName ?? ""} {eventDTO.HolderMiddlename ?? ""}\n\n" +
-						$"*{eventDTO.ObjectName ?? "Контрольная точка не задана"}*\n" +
-						$"{eventDTO.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
-						$"{((eventDTO.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
+				Text = $"*Сотрудник*\n{eventDTO?.HolderSurname ?? ""} {eventDTO?.HolderName ?? ""} {eventDTO?.HolderMiddlename ?? ""}\n\n" +
+						$"*{eventDTO?.ObjectName ?? "Контрольная точка не задана"}*\n" +
+						$"{eventDTO?.EventTime?.DateTime.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
+						$"{((eventDTO?.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
 						$"Осуществление прохода по пропуску",
 				Attachments = new List<Attachment> {
 						new Attachment {
@@ -298,7 +298,9 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 				eventInfo[1] = events.FirstOrDefault(//evInf => evInf.EventCode == 105
 													//		&& evInf.TargetAreaName.Trim().ToLower().Equals("улица")
 															); // Holder Out
-				if (! eventInfo[1].TargetAreaName.Trim().ToLower().Equals("улица")){
+
+				string outTargetName = "" + eventInfo[1]?.TargetAreaName?.Trim()?.ToLower();
+				if (! outTargetName.Equals("улица")) {
 					eventInfo[1] = null;
 				}
 			}
