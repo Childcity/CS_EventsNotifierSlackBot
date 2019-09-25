@@ -312,10 +312,10 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			string info = string.Empty;
 
 			int eventNumber = 1;
-			foreach (var eventDTO in events) {
-				info += $"*{eventNumber++}. {eventDTO.ObjectName ?? "Контрольная точка не задана"} *\n" +
-						$"{eventDTO.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
-						$"{((eventDTO.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
+			foreach (var eventDTO in events?.Where(ev => ev.EventCode == 105)) {
+				info += $"*{eventNumber++}. {eventDTO?.ObjectName ?? "Контрольная точка не задана"} *\n" +
+						$"{eventDTO?.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
+						$"{((eventDTO?.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
 						$"Осуществление прохода по пропуску\n";
 			}
 
