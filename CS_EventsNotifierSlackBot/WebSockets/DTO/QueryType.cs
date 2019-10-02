@@ -8,6 +8,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets.DTO {
 			Empty,
 			InWhatTime,
 			Where,
+			WhereNow,
 			When,
 			WhatPlace,
 			HowLong
@@ -20,6 +21,8 @@ namespace CS_EventsNotifierSlackBot.WebSockets.DTO {
 						return Type.InWhatTime;
 					case "где":
 						return Type.Where;
+					case "где сейчас":
+						return Type.WhereNow;
 					case "когда":
 						return Type.When;
 					case "куда":

@@ -135,16 +135,18 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 			var queryType = holderLocation.QueryType;
 
-			if (queryType == QueryType.Type.Where) { // юзер хочет знать где был(а) сотрудник
-				if((DateTime.UtcNow - holderLocation.TimePeriod.StartTime)?.TotalMinutes < 15) {
-					var eventDTO = holderLocation?.EventsInfo?.FirstOrDefault(ev => ev.EventCode == 105);
-					if(eventDTO != null) {
-						await sendResponse($"*Сотрудник* {holderNameStr}\n" +
-								$"осуществил {((eventDTO?.Direction ?? 0) == 0 ? "Вход" : "Выход")} через *{eventDTO?.ObjectName ?? "Контрольная точка не задана"}*\n" +
-								$"в {eventDTO?.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))}");
-						return;
-					}
+			if (queryType == QueryType.Type.WhereNow) {
+				var eventDTO = holderLocation?.EventsInfo?.FirstOrDefault(ev => ev.EventCode == 105);
+				if (eventDTO != null) {
+					await sendResponse($"*Сотрудник* {holderNameStr}\n" +
+							$"{eventDTO?.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
+							$"{eventDTO?.ObjectName ?? "Контрольная точка не задана"} | " +
+							$"{((eventDTO?.Direction ?? 0) == 0 ? "Вход" : "Выход")}");
+					return;
 				}
+			}
+
+			if (queryType == QueryType.Type.Where) { // юзер хочет знать где был(а) сотрудник
 				await sendResponse($"*Сотрудник* {holderNameStr}\n" +
 						   $"{buildEventsInfo(holderLocation.EventsInfo)}");
 				return;
@@ -319,13 +321,11 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 		private static string buildEventsInfo(List<EventInfoDTO> events) {
 			string info = string.Empty;
-
-			int eventNumber = 1;
+			
 			foreach (var eventDTO in events?.Where(ev => ev.EventCode == 105)) {
-				info += $"*{eventNumber++}. {eventDTO?.ObjectName ?? "Контрольная точка не задана"} *\n" +
-						$"{eventDTO?.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
-						$"{((eventDTO?.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
-						$"Осуществление прохода по пропуску\n";
+				info += $"{eventDTO?.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU")).PadRight(9)} | " +
+						$"{eventDTO?.ObjectName ?? "Контрольная точка не задана"} | " +
+						$"{((eventDTO?.Direction ?? 0) == 0 ? "Вход" : "Выход")}\n";
 			}
 
 			return info;

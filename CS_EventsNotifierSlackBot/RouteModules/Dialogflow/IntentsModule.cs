@@ -126,11 +126,13 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 
 			// create params for Event Server request
 			var whereHolderRequest = new HolderLocationPeriodDTO() {
-				QueryType = QueryType.Type.Where,
+				QueryType = ((DateTime.UtcNow - tp.StartTime)?.TotalMinutes < 15) ? QueryType.Type.WhereNow : QueryType.Type.Where,
 				HolderName = userQuery.TargetName.Replace("?", ""),
 				HolderMiddlename = userQuery.TargetMiddlename.Replace("?", ""),
 				HolderSurname = userQuery.TargetLastname.Replace("?", ""),
-				TimePeriod = tp
+				TimePeriod = ((DateTime.UtcNow - tp.StartTime)?.TotalMinutes < 15) 
+					? new TimePeriodDTO() { StartTime = DateTimeOffset.Now.Date.Add(TimeSpan.Zero), EndTime = DateTimeOffset.Now.Date.Add(new TimeSpan(23, 59, 59))} 
+					: tp
 			};
 
 			Console.WriteLine(whereHolderRequest.ToJson(true));
