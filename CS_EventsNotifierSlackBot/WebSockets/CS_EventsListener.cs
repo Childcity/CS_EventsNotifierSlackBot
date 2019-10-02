@@ -136,6 +136,15 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			var queryType = holderLocation.QueryType;
 
 			if (queryType == QueryType.Type.Where) { // юзер хочет знать где был(а) сотрудник
+				if((DateTime.UtcNow - holderLocation.TimePeriod.StartTime)?.TotalMinutes < 15) {
+					var eventDTO = holderLocation?.EventsInfo?.FirstOrDefault(ev => ev.EventCode == 105);
+					if(eventDTO != null) {
+						await sendResponse($"*Сотрудник* {holderNameStr}\n" +
+								$"осуществил {((eventDTO?.Direction ?? 0) == 0 ? "Вход" : "Выход")} через *{eventDTO?.ObjectName ?? "Контрольная точка не задана"}*\n" +
+								$"в {eventDTO?.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))}");
+						return;
+					}
+				}
 				await sendResponse($"*Сотрудник* {holderNameStr}\n" +
 						   $"{buildEventsInfo(holderLocation.EventsInfo)}");
 				return;
@@ -253,7 +262,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 			await sendResponse(new Message() {
 				Text = $"*Сотрудник*\n{eventDTO?.HolderSurname ?? ""} {eventDTO?.HolderName ?? ""} {eventDTO?.HolderMiddlename ?? ""}\n\n" +
 						$"*{eventDTO?.ObjectName ?? "Контрольная точка не задана"}*\n" +
-						$"{eventDTO?.EventTime?.DateTime.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
+						$"{eventDTO?.EventTime?.ToLocalTime().ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
 						$"{((eventDTO?.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
 						$"Осуществление прохода по пропуску",
 				Attachments = new List<Attachment> {
