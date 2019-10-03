@@ -289,7 +289,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 
 			try { // попытка найти любое последнее событие прохода
 				var lastEvent = holderLocation.EventsInfo.First(evInf => evInf.EventCode == 105);
-				msg += $"\nПоследнее событие прохода:\n" +
+				msg += $"\nПоследнее событие прохода:\n " +
 					   $"{lastEvent.EventTime?.ToString("T", CultureInfo.CreateSpecificCulture("ru-RU"))} | " +
 					   $"{lastEvent.ObjectName ?? "\"Контрольная точка не задана\""} | " +
 					   $"{((lastEvent.Direction ?? 0) == 0 ? "Вход" : "Выход")} | " +
