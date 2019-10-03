@@ -16,7 +16,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets.DTO {
 
 		public static Type GetType(string queryType) {
 			if(queryType != null && queryType.Length > 2) {
-				switch(queryType.Trim().ToLower()) {
+				switch(queryType.Replace("?", "").Trim().ToLower()) {
 					case "во сколько":
 						return Type.InWhatTime;
 					case "где":

@@ -83,9 +83,9 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 			// create params for Event Server request
 			var holderRequest = new HolderLocationPeriodDTO() {
 				QueryType = QueryType.GetType(userQuery.QueryType),
-				HolderName = userQuery.TargetName.Replace("?", ""),
-				HolderMiddlename = userQuery.TargetMiddlename.Replace("?", ""),
-				HolderSurname = userQuery.TargetLastname.Replace("?", ""),
+				HolderName = userQuery.TargetName.Trim().Replace("?", ""),
+				HolderMiddlename = userQuery.TargetMiddlename.Trim().Replace("?", ""),
+				HolderSurname = userQuery.TargetLastname.Trim().Replace("?", ""),
 				TimePeriod = tp,
 				IsHolderIn = userQuery.InOrOut == null ? new bool?() : 
 								userQuery.InOrOut.Trim().Equals("пришла", StringComparison.OrdinalIgnoreCase) ? true : false
@@ -127,9 +127,9 @@ namespace CS_EventsNotifierSlackBot.RouteModules.Dialogflow {
 			// create params for Event Server request
 			var whereHolderRequest = new HolderLocationPeriodDTO() {
 				QueryType = ((DateTime.UtcNow - tp.StartTime)?.TotalMinutes < 15) ? QueryType.Type.WhereNow : QueryType.Type.Where,
-				HolderName = userQuery.TargetName.Replace("?", ""),
-				HolderMiddlename = userQuery.TargetMiddlename.Replace("?", ""),
-				HolderSurname = userQuery.TargetLastname.Replace("?", ""),
+				HolderName = userQuery.TargetName.Trim().Replace("?", ""),
+				HolderMiddlename = userQuery.TargetMiddlename.Trim().Replace("?", ""),
+				HolderSurname = userQuery.TargetLastname.Trim().Replace("?", ""),
 				TimePeriod = ((DateTime.UtcNow - tp.StartTime)?.TotalMinutes < 15) 
 					? new TimePeriodDTO() { StartTime = DateTimeOffset.Now.Date.Add(TimeSpan.Zero), EndTime = DateTimeOffset.Now.Date.Add(new TimeSpan(23, 59, 59))} 
 					: tp

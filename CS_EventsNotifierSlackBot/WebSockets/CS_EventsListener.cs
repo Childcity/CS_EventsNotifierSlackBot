@@ -175,11 +175,11 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 						} catch (Exception) { }
 					}
 
-					await sendResponse($"{holderNameStr}\n" +
-								$"был(а) на территории {(outEventTime - inEventTime)?.ToString(@"%h'ч. '%m'мин.'")}");
+					await sendResponse($"Время на территории: *{(outEventTime - inEventTime)?.ToString(@"%h'ч. '%m'мин.'")}*");
 				} else {
-					await sendResponse($"Сотрудника \n{holderNameStr}\n" +
-								$"*не было*");
+					await sendResponse($"Сотрудника \n" +
+										$"{holderNameStr}\n" +
+										$"*не было*");
 				}
 
 				return;
@@ -203,7 +203,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 				} else { // юзер хочет узнать (Во сколько)/(когда)/(в котором часу) сотрудник зашёл
 					if (foundedEventInf?[0] != null) {
 						await sendResponse($"{holderNameStr}\n" +
-									$"*зашёл* в {eventInTimeStr} через {eventObjNameInStr}\n");
+									$"{eventInTimeStr} | {eventObjNameInStr}\n");
 					} else {
 						await sendResponse($"Сотрудника \n{holderNameStr}\n" +
 									$"*не было*");
@@ -222,7 +222,7 @@ namespace CS_EventsNotifierSlackBot.WebSockets {
 								   $"*вышел* в {eventOutTimeStr} через {eventObjNameOutStr}\n");
 					} else { // юзер хочет узнать Во сколько/когда сотрудник вышел
 						await sendResponse($"{holderNameStr}\n" +
-									$"*вышел* в {eventOutTimeStr} через {eventObjNameOutStr}");
+									$"{eventOutTimeStr} | {eventObjNameOutStr}");
 					}
 				}
 			}
