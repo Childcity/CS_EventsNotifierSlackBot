@@ -7,3 +7,9 @@ fields of user query to provided URL.
 
 ## How it works
 ![scheme](./doc/Scheme.png)
+
+## Example of event from ChatBot in [Slack](https://slack.com) channel
+![scheme](./doc/EventExamle.jpg)
+## Example of Dialog with ChatBot in [Slack](https://slack.com) channel
+![scheme](./doc/DialogExamle1.jpg)
+![scheme](./doc/DialogExamle2.jpg)
