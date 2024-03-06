@@ -23,7 +23,7 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.4.10" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.1.9" />
     <PackageReference Include="Nancy" Version="2.0.0" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0006" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.7" />
     <PackageReference Include="SlackBotMessages" Version="2.0.0" />
   </ItemGroup>
 
